@@ -1,11 +1,11 @@
 package main
 
 import (
-	"time"
 	"context"
+	"time"
 
-	"google.golang.org/grpc"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	"github.com/iotexproject/iotex-core/pkg/log"
 	"github.com/iotexproject/iotex-core/protogen/iotexapi"
@@ -33,7 +33,7 @@ func main() {
 	production := make(map[string]uint64)
 	interval := 10000
 	start := 1
-	for start + interval - 1 <= int(chainMeta.Height) {
+	for start+interval-1 <= int(chainMeta.Height) {
 		getBlockMetasRequest := &iotexapi.GetBlockMetasRequest{
 			Lookup: &iotexapi.GetBlockMetasRequest_ByIndex{
 				ByIndex: &iotexapi.GetBlockMetasByIndexRequest{
@@ -75,5 +75,5 @@ func main() {
 		producerCount++
 		log.L().Info(bp, zap.Uint64("produce", produce))
 	}
-	log.L().Info("Block Production Summary", zap.Uint64("number of producers", producerCount), zap.Uint64("Average Production", chainMeta.Height / producerCount))
+	log.L().Info("Block Production Summary", zap.Uint64("number of producers", producerCount), zap.Uint64("Average Production", chainMeta.Height/producerCount))
 }
