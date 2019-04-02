@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"time"
+	"flag"
 
 	"github.com/tealeg/xlsx"
 	"go.uber.org/zap"
@@ -16,6 +17,12 @@ import (
 )
 
 func main() {
+	var startEpoch int
+	var endEpoch int
+	flag.IntVar(&startEpoch, "start-epoch", 30, "start epoch number")
+	flag.IntVar(&endEpoch, "end-epoch", 140, "end epoch number")
+	flag.Parse()
+
 	grpcAddr := "api.iotex.one:80"
 
 	grpcctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -29,7 +36,7 @@ func main() {
 
 	participation := make(map[string]uint64)
 	topDelegates := make(map[string]uint64)
-	for epochNum := 30; epochNum <= 140; epochNum++ {
+	for epochNum := startEpoch; epochNum <= endEpoch; epochNum++ {
 		epochHeight := (epochNum-1)*24*15 + 1
 		res, err := client.ReadState(context.Background(), &iotexapi.ReadStateRequest{
 			ProtocolID: []byte("poll"),
@@ -90,7 +97,7 @@ func main() {
 			cell3.Value = strconv.Itoa(int(activeCount))
 		}
 		cell4 = row.AddCell()
-		cell4.Value = strconv.Itoa(140 - 30 + 1)
+		cell4.Value = strconv.Itoa(endEpoch - startEpoch + 1)
 	}
 
 	for _, col := range sheet.Cols {
