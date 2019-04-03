@@ -3,15 +3,31 @@ package main
 import (
 	"context"
 	"time"
+	"flag"
+	"strconv"
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"github.com/tealeg/xlsx"
 
 	"github.com/iotexproject/iotex-core/pkg/log"
 	"github.com/iotexproject/iotex-core/protogen/iotexapi"
 )
 
 func main() {
+	var startHeight int
+	var endHeight int
+	var scanWindow int
+
+	flag.IntVar(&startHeight, "start-height", 1, "start height")
+	flag.IntVar(&endHeight, "end-height", 1, "end height")
+	flag.IntVar(&scanWindow, "window", 10000, "scan window for getting block metadata")
+	flag.Parse()
+
+	if startHeight > endHeight {
+		log.L().Fatal("start height cannot be greater than end height")
+	}
+
 	grpcAddr := "api.iotex.one:80"
 
 	grpcctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -30,15 +46,18 @@ func main() {
 	chainMeta := chainMetaRes.ChainMeta
 	log.L().Info("Blockchain Metadata", zap.Uint64("current height", chainMeta.Height))
 
+	if endHeight == 1 || uint64(endHeight) > chainMeta.Height {
+		endHeight = int(chainMeta.Height)
+	}
+
 	production := make(map[string]uint64)
-	interval := 10000
-	start := 1
-	for start+interval-1 <= int(chainMeta.Height) {
+	start := startHeight
+	for start+scanWindow-1 <= endHeight {
 		getBlockMetasRequest := &iotexapi.GetBlockMetasRequest{
 			Lookup: &iotexapi.GetBlockMetasRequest_ByIndex{
 				ByIndex: &iotexapi.GetBlockMetasByIndexRequest{
 					Start: uint64(start),
-					Count: uint64(interval),
+					Count: uint64(scanWindow),
 				},
 			},
 		}
@@ -50,14 +69,14 @@ func main() {
 		for _, blk := range blkMetas {
 			production[blk.ProducerAddress]++
 		}
-		start += interval
+		start += scanWindow
 	}
-	if start <= int(chainMeta.Height) {
+	if start <= endHeight {
 		getBlockMetasRequest := &iotexapi.GetBlockMetasRequest{
 			Lookup: &iotexapi.GetBlockMetasRequest_ByIndex{
 				ByIndex: &iotexapi.GetBlockMetasByIndexRequest{
 					Start: uint64(start),
-					Count: chainMeta.Height - uint64(start) + 1,
+					Count: uint64(endHeight) - uint64(start) + 1,
 				},
 			},
 		}
@@ -70,10 +89,40 @@ func main() {
 			production[blk.ProducerAddress]++
 		}
 	}
-	var producerCount uint64
-	for bp, produce := range production {
-		producerCount++
-		log.L().Info(bp, zap.Uint64("produce", produce))
+	producerCount := len(production)
+	totalNumBlks := endHeight - startHeight + 1
+	log.L().Info("Block Production Summary", zap.Int("number of producers", producerCount), zap.Int("Average Production", totalNumBlks /producerCount))
+
+	if err := writeExcel("rehearsalbpstat.xlsx", production, totalNumBlks); err != nil {
+		log.L().Fatal("Failed to write block producer status to excel form.", zap.Error(err))
 	}
-	log.L().Info("Block Production Summary", zap.Uint64("number of producers", producerCount), zap.Uint64("Average Production", chainMeta.Height/producerCount))
+}
+
+func writeExcel(fileName string, production map[string]uint64, totalNumBlks int) error {
+	file := xlsx.NewFile()
+	sheet, err := file.AddSheet("sheet1")
+	if err != nil {
+		return err
+	}
+	row := sheet.AddRow()
+	cell1 := row.AddCell()
+	cell1.Value = "Block Producer"
+	cell2 := row.AddCell()
+	cell2.Value = "Number of Productions"
+	cell3 := row.AddCell()
+	cell3.Value = "Total Number of Blocks"
+	for bp, count := range production {
+		row := sheet.AddRow()
+		cell1 = row.AddCell()
+		cell1.Value = bp
+		cell2 = row.AddCell()
+		cell2.Value = strconv.Itoa(int(count))
+		cell3 = row.AddCell()
+		cell3.Value = strconv.Itoa(totalNumBlks)
+	}
+
+	for _, col := range sheet.Cols {
+		col.Width = 40
+	}
+	return file.Save(fileName)
 }
