@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
-	"time"
 	"flag"
 	"strconv"
+	"time"
 
+	"github.com/tealeg/xlsx"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"github.com/tealeg/xlsx"
 
 	"github.com/iotexproject/iotex-core/pkg/log"
 	"github.com/iotexproject/iotex-core/protogen/iotexapi"
@@ -98,12 +98,16 @@ func main() {
 
 	production := make(map[string]uint64)
 	start := startHeight
-	for start+scanWindow-1 <= endHeight {
+	for start <= endHeight {
+		count := scanWindow
+		if scanWindow > endHeight-start+1 {
+			count = endHeight - start + 1
+		}
 		getBlockMetasRequest := &iotexapi.GetBlockMetasRequest{
 			Lookup: &iotexapi.GetBlockMetasRequest_ByIndex{
 				ByIndex: &iotexapi.GetBlockMetasByIndexRequest{
 					Start: uint64(start),
-					Count: uint64(scanWindow),
+					Count: uint64(count),
 				},
 			},
 		}
@@ -115,29 +119,11 @@ func main() {
 		for _, blk := range blkMetas {
 			production[blk.ProducerAddress]++
 		}
-		start += scanWindow
-	}
-	if start <= endHeight {
-		getBlockMetasRequest := &iotexapi.GetBlockMetasRequest{
-			Lookup: &iotexapi.GetBlockMetasRequest_ByIndex{
-				ByIndex: &iotexapi.GetBlockMetasByIndexRequest{
-					Start: uint64(start),
-					Count: uint64(endHeight) - uint64(start) + 1,
-				},
-			},
-		}
-		blockMetasRes, err := client.GetBlockMetas(context.Background(), getBlockMetasRequest)
-		if err != nil {
-			log.L().Fatal("Failed to get block metadata.", zap.Error(err))
-		}
-		blkMetas := blockMetasRes.BlkMetas
-		for _, blk := range blkMetas {
-			production[blk.ProducerAddress]++
-		}
+		start += count
 	}
 	producerCount := len(production)
 	totalNumBlks := endHeight - startHeight + 1
-	log.L().Info("Block Production Summary", zap.Int("number of producers", producerCount), zap.Int("Average Production", totalNumBlks /producerCount))
+	log.L().Info("Block Production Summary", zap.Int("number of producers", producerCount), zap.Int("Average Production", totalNumBlks/producerCount))
 
 	if err := writeExcel("rehearsalbpstat.xlsx", production, delegateMap, totalNumBlks); err != nil {
 		log.L().Fatal("Failed to write block producer status to excel form.", zap.Error(err))

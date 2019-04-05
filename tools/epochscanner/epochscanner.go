@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
+	"flag"
 	"strconv"
 	"time"
-	"flag"
 
 	"github.com/tealeg/xlsx"
 	"go.uber.org/zap"
