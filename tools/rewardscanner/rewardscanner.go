@@ -28,7 +28,7 @@ var (
 		"iotexteam":    "io1fra0fx6akacny9asewt7vyvggqq4rtq3eznccr",
 		"rosemary9":    "io1u5ff879gg2dw9vfpxr2tsmuaz07e2rea6gvl7s",
 		"consensusnet": "io1kugyfdkdss7acy0y9x8fmfjd5qyxfcye3gxt99",
-		"iotexmainet":  "io12wc9ra4la98yay4cqdav5mwxxuzwpt6hk23n3z",
+		"iotexmainnet":  "io12wc9ra4la98yay4cqdav5mwxxuzwpt6hk23n3z",
 		"metanyx":      "io10reczcaelglh5xmkay65h9vw3e5dp82e8vw0rz",
 		"pubxpayments": "io1rfeltdr5wgmhm4rdx9eun3pp68ahm7fq00wcmm",
 		"ratels":       "io1n3llm0zzlles6pvpzugzajyzyjehztztxf2rff",
