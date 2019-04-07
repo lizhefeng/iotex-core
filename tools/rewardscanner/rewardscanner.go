@@ -68,6 +68,33 @@ var (
 		"preangle":     "io1z4sxtefurklkyrfmmdtjmw4h8csnxlv9747hyd",
 		"rosemary":     "io1ar5l5s268rtgzshltnqv88mua06ucm58dx678y",
 	}
+	exemptAddrs = map[string]bool{
+		"io15fqav3tugm96ge7anckx0k4gukz5m4mqf0jpv3": true,
+		"io1x9kjkr0qv2fa7j4t2as8lrj223xxsqt4tl7xp7": true,
+		"io1ar5l5s268rtgzshltnqv88mua06ucm58dx678y": true,
+		"io1xsx5n94kg2zv64r7tm8vyz9mh86amfak9ka9xx": true,
+		"io1vtm2zgn830pn6auc2cvnchgwdaefa9gr4z0s86": true,
+		"io159fv8mu9d5djk8u2t0flgw4yqmt6fg98uqjka8": true,
+		"io1c3r4th3zrk4uhv83a9gr4gvn3y6pzaj6mc84ea": true,
+		"io14vmhs9c75r2ptxdaqrtk0dz7skct30pxmt69d9": true,
+		"io1gf08snppu2a2wfd50pjas2j6q2kcxjzqph3pep": true,
+		"io1u5ff879gg2dw9vfpxr2tsmuaz07e2rea6gvl7s": true,
+		"io1du4eq4f88n4wyc026l3gamjwetlgsg4jz7j884": true,
+		"io12yxdwewry70gr9fs6fphyfaky9c7gurmzk8f4f": true,
+		"io1lx53nfgq2dnzrz5ecz2ecs7vvl6qll0mkn970w": true,
+		"io127ftn4ry6wgxdrw4hcd6gdwqlq70ujk98dvtw5": true,
+		"io1wv5m0xyermvr2n0wjx2cjsqwyk863drdl5qfyn": true,
+		"io1v0q5g2f8z6l3v25krl677chdx7g5pwt9kvqfpc": true,
+		"io1xsdegzr2hdj5sv5ad4nr0yfgpsd98e40u6svem": true,
+		"io1fks575kklxafq4fwjccmz5d3pmq5ynxk5h6h0v": true,
+		"io15npzu93ug8r3zdeysppnyrcdu2xssz0lcam9l9": true,
+		"io1gh7xfrsnj6p5uqgjpk9xq6jg9na28aewgp7a9v": true,
+		"io1nyjs526mnqcsx4twa7nptkg08eclsw5c2dywp4": true,
+		"io1jafqlvntcxgyp6e0uxctt3tljzc3vyv5hg4ukh": true,
+		"io1z7mjef7w528nasnsafan0rp6yuvkvq405l6r8j": true,
+		"io1cup9k8hl8fp40vrj29ex8djc346780dk223end": true,
+		"io1scs89jur7qklzh5vfrmha3c40u8yajjx6kvzg9": true,
+	}
 )
 
 func main() {
@@ -114,6 +141,7 @@ func main() {
 	produce := make(map[int]int)
 	votes := make(map[int]string)
 	totalVotes := make(map[int]*big.Int)
+	robotVotes := make(map[int]*big.Int)
 	endEpochNum := rp.GetEpochNum(bc.TipHeight())
 
 	for epochNum := 1; epochNum <= int(endEpochNum); epochNum++ {
@@ -122,9 +150,13 @@ func main() {
 			log.L().Fatal("Failed to get candidates by height", zap.Error(err))
 		}
 		totalVotes[epochNum] = big.NewInt(0)
+		robotVotes[epochNum] = big.NewInt(0)
 		votes[epochNum] = "0"
 		for _, cand := range candidates {
 			totalVotes[epochNum].Add(totalVotes[epochNum], cand.Votes)
+			if _, ok := exemptAddrs[cand.Address]; ok {
+				robotVotes[epochNum].Add(robotVotes[epochNum], cand.Votes)
+			}
 			if cand.Address == bpAddr {
 				votes[epochNum] = cand.Votes.String()
 				rewardAddrs[epochNum] = cand.RewardAddress
@@ -184,7 +216,7 @@ func main() {
 		rewards[rewardAddr] = reward
 	}
 
-	if err := writeExcel(alias+"_reward.xlsx", int(cfg.Genesis.NumSubEpochs), produce, rewardAddrs, votes, totalVotes, rewards); err != nil {
+	if err := writeExcel(alias+"_reward.xlsx", int(cfg.Genesis.NumSubEpochs), produce, rewardAddrs, votes, totalVotes, robotVotes, rewards); err != nil {
 		log.L().Fatal("Failed to write reward result into excel form.")
 	}
 }
@@ -240,6 +272,7 @@ func writeExcel(
 	rewardAddr map[int]string,
 	votes map[int]string,
 	totalVotes map[int]*big.Int,
+	robotVotes map[int]*big.Int,
 	rewards map[string]*big.Int,
 ) error {
 	file := xlsx.NewFile()
@@ -259,7 +292,9 @@ func writeExcel(
 	cell5 := row.AddCell()
 	cell5.Value = "Total Votes"
 	cell6 := row.AddCell()
-	cell6.Value = "Reward Address"
+	cell6.Value = "Robot Votes"
+	cell7 := row.AddCell()
+	cell7.Value = "Reward Address"
 
 	keys := make([]int, 0)
 	for epochNum := range totalVotes {
@@ -281,8 +316,10 @@ func writeExcel(
 		cell4.Value = votes[epochNum]
 		cell5 = row.AddCell()
 		cell5.Value = totalVotes[epochNum].String()
-		cell6 = row.AddCell()
-		cell6.Value = rewardAddr[epochNum]
+		cell6 := row.AddCell()
+		cell6.Value = robotVotes[epochNum].String()
+		cell7 = row.AddCell()
+		cell7.Value = rewardAddr[epochNum]
 	}
 
 	sheet2, err := file.AddSheet("sheet2")
