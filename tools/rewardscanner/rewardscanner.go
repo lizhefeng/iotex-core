@@ -138,6 +138,7 @@ func main() {
 	}
 
 	rewardAddrs := make(map[int]string)
+	isDelegate := make(map[int]bool)
 	produce := make(map[int]int)
 	votes := make(map[int]string)
 	totalVotes := make(map[int]*big.Int)
@@ -160,6 +161,18 @@ func main() {
 			if cand.Address == bpAddr {
 				votes[epochNum] = cand.Votes.String()
 				rewardAddrs[epochNum] = cand.RewardAddress
+			}
+		}
+
+		numDelegates := int(rp.NumCandidateDelegates())
+		if len(candidates) < numDelegates {
+			numDelegates = len(candidates)
+		}
+		delegateList := candidates[:numDelegates]
+		for _, delegate := range delegateList {
+			if bpAddr == delegate.Address {
+				isDelegate[epochNum] = true
+				break
 			}
 		}
 
@@ -216,7 +229,7 @@ func main() {
 		rewards[rewardAddr] = reward
 	}
 
-	if err := writeExcel(alias+"_reward.xlsx", int(cfg.Genesis.NumSubEpochs), produce, rewardAddrs, votes, totalVotes, robotVotes, rewards); err != nil {
+	if err := writeExcel(alias+"_reward.xlsx", int(cfg.Genesis.NumSubEpochs), isDelegate, produce, rewardAddrs, votes, totalVotes, robotVotes, rewards); err != nil {
 		log.L().Fatal("Failed to write reward result into excel form.")
 	}
 }
@@ -268,6 +281,7 @@ func readActiveBlockProducersByEpoch(p *rolldpos.Protocol, bc blockchain.Blockch
 func writeExcel(
 	fileName string,
 	NumSubEpochs int,
+	isDelegate map[int]bool,
 	produce map[int]int,
 	rewardAddr map[int]string,
 	votes map[int]string,
@@ -284,17 +298,19 @@ func writeExcel(
 	cell1 := row.AddCell()
 	cell1.Value = "Epoch Number"
 	cell2 := row.AddCell()
-	cell2.Value = "Production"
+	cell2.Value = "Is Delegate"
 	cell3 := row.AddCell()
-	cell3.Value = "Expected Production"
+	cell3.Value = "Production"
 	cell4 := row.AddCell()
-	cell4.Value = "Votes"
+	cell4.Value = "Expected Production"
 	cell5 := row.AddCell()
-	cell5.Value = "Total Votes"
+	cell5.Value = "Votes"
 	cell6 := row.AddCell()
-	cell6.Value = "Robot Votes"
+	cell6.Value = "Total Votes"
 	cell7 := row.AddCell()
-	cell7.Value = "Reward Address"
+	cell7.Value = "Robot Votes"
+	cell8 := row.AddCell()
+	cell8.Value = "Reward Address"
 
 	keys := make([]int, 0)
 	for epochNum := range totalVotes {
@@ -306,20 +322,25 @@ func writeExcel(
 		cell1 = row.AddCell()
 		cell1.Value = strconv.Itoa(epochNum)
 		cell2 = row.AddCell()
-		cell2.Value = strconv.Itoa(produce[epochNum])
-		cell3 = row.AddCell()
-		cell3.Value = strconv.Itoa(NumSubEpochs)
-		if _, ok := produce[epochNum]; !ok {
-			cell3.Value = "0"
+		cell2.Value = "No"
+		if _, ok := isDelegate[epochNum]; ok {
+			cell2.Value = "Yes"
 		}
+		cell3 = row.AddCell()
+		cell3.Value = strconv.Itoa(produce[epochNum])
 		cell4 = row.AddCell()
-		cell4.Value = votes[epochNum]
+		cell4.Value = strconv.Itoa(NumSubEpochs)
+		if _, ok := produce[epochNum]; !ok {
+			cell4.Value = "0"
+		}
 		cell5 = row.AddCell()
-		cell5.Value = totalVotes[epochNum].String()
-		cell6 := row.AddCell()
-		cell6.Value = robotVotes[epochNum].String()
-		cell7 = row.AddCell()
-		cell7.Value = rewardAddr[epochNum]
+		cell5.Value = votes[epochNum]
+		cell6 = row.AddCell()
+		cell6.Value = totalVotes[epochNum].String()
+		cell7 := row.AddCell()
+		cell7.Value = robotVotes[epochNum].String()
+		cell8 = row.AddCell()
+		cell8.Value = rewardAddr[epochNum]
 	}
 
 	sheet2, err := file.AddSheet("sheet2")
