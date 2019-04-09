@@ -5,11 +5,11 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/iotexproject/iotex-core/pkg/log"
-	"github.com/iotexproject/iotex-core/config"
-	"github.com/iotexproject/iotex-core/server/itx"
 	"github.com/iotexproject/iotex-core/action"
 	"github.com/iotexproject/iotex-core/address"
+	"github.com/iotexproject/iotex-core/config"
+	"github.com/iotexproject/iotex-core/pkg/log"
+	"github.com/iotexproject/iotex-core/server/itx"
 )
 
 var (
@@ -59,7 +59,7 @@ var (
 		"io1ar5l5s268rtgzshltnqv88mua06ucm58dx678y": "rosemary",
 	}
 
-	robotPublicKey = map[string]bool {
+	robotPublicKey = map[string]bool{
 		"04e707e24ff89349260b5b34c7fdcf7078804dcd6c97c9097b41e020ada9c269e0b9b60bb79d5c77263290634f30952bcfce8cc9340162a568d86ccee5119ff866": true,
 		"048b895e188f84ad8ec7448e09793bee4489fa64e659a803a34f27cb2fab9b71451d3fbaa58b41a6c283f90ee1a1e11693df7a05d2bee4797c3f30e2906dfaba08": true,
 		"0476ca3357f7128eeb06e5ff84ec1c58ab363a40ebf9c691e0e2336cc7949f634b03348f2afdfeb548306b9756b75da8d3713cf914cd97ef1c3d697bbb94cb1905": true,

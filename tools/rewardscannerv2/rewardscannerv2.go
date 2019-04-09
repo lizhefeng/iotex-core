@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"math/big"
 	"sort"
 	"strconv"
@@ -23,7 +22,7 @@ import (
 )
 
 var (
-	delegateMap = map[string]string{
+	aliasToAddr = map[string]string{
 		"cobo":         "io1vlsmjs87jlk93624nppccfn24nk9nplu9uhu53",
 		"iotexteam":    "io1fra0fx6akacny9asewt7vyvggqq4rtq3eznccr",
 		"rosemary9":    "io1u5ff879gg2dw9vfpxr2tsmuaz07e2rea6gvl7s",
@@ -68,6 +67,53 @@ var (
 		"preangle":     "io1z4sxtefurklkyrfmmdtjmw4h8csnxlv9747hyd",
 		"rosemary":     "io1ar5l5s268rtgzshltnqv88mua06ucm58dx678y",
 	}
+
+	addrToAlias = map[string]string{
+		"io1vlsmjs87jlk93624nppccfn24nk9nplu9uhu53": "cobo",
+		"io1fra0fx6akacny9asewt7vyvggqq4rtq3eznccr": "iotexteam",
+		"io1u5ff879gg2dw9vfpxr2tsmuaz07e2rea6gvl7s": "rosemary9",
+		"io1kugyfdkdss7acy0y9x8fmfjd5qyxfcye3gxt99": "consensusnet",
+		"io12wc9ra4la98yay4cqdav5mwxxuzwpt6hk23n3z": "iotexmainnet",
+		"io10reczcaelglh5xmkay65h9vw3e5dp82e8vw0rz": "metanyx",
+		"io1rfeltdr5wgmhm4rdx9eun3pp68ahm7fq00wcmm": "pubxpayments",
+		"io1n3llm0zzlles6pvpzugzajyzyjehztztxf2rff": "ratels",
+		"io1xsx5n94kg2zv64r7tm8vyz9mh86amfak9ka9xx": "rosemary3",
+		"io1wv5m0xyermvr2n0wjx2cjsqwyk863drdl5qfyn": "rosemary13",
+		"io1qqaswtu7rcevahucpfxc0zxx088pylwtxnkrrl": "stanfordcpc",
+		"io1e3w03ulnrsxth2g0rgsq6v406fhdccsgfq3hz7": "iotask",
+		"io1gfq9el2gnguus64ex3hu8ajd6e4yzk3f9cz5vx": "laomao",
+		"io15fqav3tugm96ge7anckx0k4gukz5m4mqf0jpv3": "rosemary0",
+		"io127ftn4ry6wgxdrw4hcd6gdwqlq70ujk98dvtw5": "rosemary12",
+		"io108h7sa5sap44e244hz649zyk5y4rqzsvnpzxh5": "royalland",
+		"io1sd5t5dwxrk2t50z8yl86n6ht8c99umt4u6rknl": "hashbuy",
+		"io17cmrextyfeu4gddwd89g5qncedsnc553dhz7xa": "infstones",
+		"io1gf08snppu2a2wfd50pjas2j6q2kcxjzqph3pep": "rosemary8",
+		"io1qnec80ark9shjc6uzk45dhm8s50dpc27sjuver": "gamefantasy",
+		"io1c3r4th3zrk4uhv83a9gr4gvn3y6pzaj6mc84ea": "rosemary6",
+		"io12yxdwewry70gr9fs6fphyfaky9c7gurmzk8f4f": "rosemary11",
+		"io1zy9q4myp3jezxdsv82z3f865ruamhqm7a6mggh": "capitalmu",
+		"io14u5d66rt465ykm7t2847qllj0reml27q30kr75": "iosg",
+		"io1nf0rvzgq3tqym6n3trttsrt7d4gqqsmqfzy0da": "iotexlab",
+		"io159fv8mu9d5djk8u2t0flgw4yqmt6fg98uqjka8": "rosemary5",
+		"io14vmhs9c75r2ptxdaqrtk0dz7skct30pxmt69d9": "rosemary7",
+		"io1xj0u5n20tsqwxh5a3xdtmzuz9wasft0pqjrq8t": "thebottoken",
+		"io13v3dhwds82hg0uc9l4puer00k93qagdh62j0mz": "wannodes",
+		"io1wl83n3up9w8nedf30lnyxzple0gu5pme0dyrds": "whales",
+		"io1f0rh94m3ctkwep3rlsswwq5vxwlntx4s574l3q": "yvalidator",
+		"io1we5gqn4xeak9ycnu4l9lv0qfq3euapymnzffx6": "coingecko",
+		"io1kr8c6krd7dhxaaqwdkr6erqgu4z0scug3drgja": "droute",
+		"io17dm3tq9ezgs2uvwrqu8e004l5nqq33jm46r0mg": "iotexunion",
+		"io1aqf30kqz5rqh6zn82c00j684p2h2t5cg30wm8t": "keysiotex",
+		"io1ddjluttkzljqfgdtcz9eu3r3s832umy7ylx0ts": "longz",
+		"io1x9kjkr0qv2fa7j4t2as8lrj223xxsqt4tl7xp7": "rosemary1",
+		"io1vtm2zgn830pn6auc2cvnchgwdaefa9gr4z0s86": "rosemary4",
+		"io1du4eq4f88n4wyc026l3gamjwetlgsg4jz7j884": "rosemary10",
+		"io1lm85qfm24eqrc042spnplac9ran28thuh5048n": "iotexgeeks",
+		"io1et7zkzc76m9twa4gn5xht3urt9mwj05qvdtj66": "iotxplorerio",
+		"io1z4sxtefurklkyrfmmdtjmw4h8csnxlv9747hyd": "preangle",
+		"io1ar5l5s268rtgzshltnqv88mua06ucm58dx678y": "rosemary",
+	}
+
 	exemptAddrs = map[string]bool{
 		"io15fqav3tugm96ge7anckx0k4gukz5m4mqf0jpv3": true,
 		"io1x9kjkr0qv2fa7j4t2as8lrj223xxsqt4tl7xp7": true,
@@ -97,16 +143,15 @@ var (
 	}
 )
 
+type epochInfo struct {
+	isBlockProducer       bool
+	isActiveBlockProducer bool
+	produce               int
+	rewardAddr            string
+	votes                 string
+}
+
 func main() {
-	var alias string
-	flag.StringVar(&alias, "alias", "stanfordcpc", "alias for block producers")
-	flag.Parse()
-
-	bpAddr, ok := delegateMap[alias]
-	if !ok {
-		log.L().Fatal("Failed to find the corresponding block producer given the alias.")
-	}
-
 	cfg := config.Default
 	cfg.Genesis.NumSubEpochs = 15
 	cfg.Consensus.Scheme = config.NOOPScheme
@@ -137,14 +182,14 @@ func main() {
 		log.L().Fatal("Failed to cast rolldpos protocol.")
 	}
 
-	rewardAddrs := make(map[int]string)
-	isDelegate := make(map[int]bool)
-	produce := make(map[int]int)
-	votes := make(map[int]string)
+	endEpochNum := rp.GetEpochNum(bc.TipHeight())
+	epochMeta := make(map[string]map[int]*epochInfo)
+	for alias := range aliasToAddr {
+		epochMeta[alias] = make(map[int]*epochInfo)
+	}
+
 	totalVotes := make(map[int]*big.Int)
 	robotVotes := make(map[int]*big.Int)
-	endEpochNum := rp.GetEpochNum(bc.TipHeight())
-
 	for epochNum := 1; epochNum <= int(endEpochNum); epochNum++ {
 		candidates, err := bc.CandidatesByHeight(rp.GetEpochHeight(uint64(epochNum)))
 		if err != nil {
@@ -152,15 +197,16 @@ func main() {
 		}
 		totalVotes[epochNum] = big.NewInt(0)
 		robotVotes[epochNum] = big.NewInt(0)
-		votes[epochNum] = "0"
 		for _, cand := range candidates {
 			totalVotes[epochNum].Add(totalVotes[epochNum], cand.Votes)
 			if _, ok := exemptAddrs[cand.Address]; ok {
 				robotVotes[epochNum].Add(robotVotes[epochNum], cand.Votes)
 			}
-			if cand.Address == bpAddr {
-				votes[epochNum] = cand.Votes.String()
-				rewardAddrs[epochNum] = cand.RewardAddress
+			if epochMap, ok := epochMeta[addrToAlias[cand.Address]]; ok {
+				epochMap[epochNum] = &epochInfo{
+					rewardAddr: cand.RewardAddress,
+					votes:      cand.Votes.String(),
+				}
 			}
 		}
 
@@ -170,36 +216,31 @@ func main() {
 		}
 		delegateList := candidates[:numDelegates]
 		for _, delegate := range delegateList {
-			if bpAddr == delegate.Address {
-				isDelegate[epochNum] = true
-				break
+			if epochMap, ok := epochMeta[addrToAlias[delegate.Address]]; ok {
+				epochMap[epochNum].isBlockProducer = true
 			}
 		}
 
 		activeBPs, err := readActiveBlockProducersByEpoch(rp, bc, uint64(epochNum))
 		if err != nil {
-			log.L().Fatal("Failed to get active block producers", zap.Error(err))
+			log.L().Fatal("Failed to read active block producers")
 		}
-		for _, bp := range activeBPs {
-			if bpAddr == bp.Address {
-				produce[epochNum] = 0
-				break
+
+		for _, activeBP := range activeBPs {
+			if epochMap, ok := epochMeta[addrToAlias[activeBP.Address]]; ok {
+				epochMap[epochNum].isActiveBlockProducer = true
 			}
-		}
-		if _, ok := produce[epochNum]; !ok {
-			continue
 		}
 
 		epochStartHeight := rp.GetEpochHeight(uint64(epochNum))
 		epochEndHeight := rp.GetEpochLastBlockHeight(uint64(epochNum))
-		produce[epochNum] = 0
 		for height := int(epochStartHeight); height <= int(epochEndHeight); height++ {
 			blk, err := bc.GetBlockByHeight(uint64(height))
 			if err != nil {
 				log.L().Fatal("Failed to get block", zap.Error(err))
 			}
-			if blk.ProducerAddress() == bpAddr {
-				produce[epochNum]++
+			if epochMap, ok := epochMeta[addrToAlias[blk.ProducerAddress()]]; ok {
+				epochMap[epochNum].produce++
 			}
 		}
 	}
@@ -215,22 +256,37 @@ func main() {
 	if !ok {
 		log.L().Fatal("Failed to cast rewarding protocol.")
 	}
-	uniqueRewardAddrs := uniqueAddress(rewardAddrs)
-	rewards := make(map[string]*big.Int)
-	for _, rewardAddr := range uniqueRewardAddrs {
-		addr, err := address.FromString(rewardAddr)
-		if err != nil {
-			log.L().Fatal("Failed to get address from string", zap.Error(err))
+
+	rewardAddrMap := make(map[string][]string)
+	for alias, epochMap := range epochMeta {
+		rewardAddrs := make([]string, 0)
+		for _, epochInfo := range epochMap {
+			rewardAddrs = append(rewardAddrs, epochInfo.rewardAddr)
 		}
-		reward, err := rewardProtocol.UnclaimedBalance(context.Background(), ws, addr)
-		if err != nil {
-			log.L().Fatal("Failed to get unclaimed balance", zap.Error(err))
-		}
-		rewards[rewardAddr] = reward
+		rewardAddrMap[alias] = uniqueAddress(rewardAddrs)
 	}
 
-	if err := writeExcel(alias+"_reward.xlsx", int(cfg.Genesis.NumSubEpochs), isDelegate, produce, rewardAddrs, votes, totalVotes, robotVotes, rewards); err != nil {
-		log.L().Fatal("Failed to write reward result into excel form.")
+	rewards := make(map[string]map[string]*big.Int)
+	for alias, rewardAddrs := range rewardAddrMap {
+		rewardMap := make(map[string]*big.Int)
+		for _, rewardAddr := range rewardAddrs {
+			addr, err := address.FromString(rewardAddr)
+			if err != nil {
+				log.L().Fatal("Failed to get address from string", zap.Error(err))
+			}
+			reward, err := rewardProtocol.UnclaimedBalance(context.Background(), ws, addr)
+			if err != nil {
+				log.L().Fatal("Failed to get unclaimed balance", zap.Error(err))
+			}
+			rewardMap[rewardAddr] = reward
+		}
+		rewards[alias] = rewardMap
+	}
+
+	for alias, epochMap := range epochMeta {
+		if err := writeExcel(alias+"_reward.xlsx", int(cfg.Genesis.NumSubEpochs), epochMap, totalVotes, robotVotes, rewards[alias]); err != nil {
+			log.L().Fatal("Failed to write reward result into excel form.")
+		}
 	}
 }
 
@@ -281,10 +337,7 @@ func readActiveBlockProducersByEpoch(p *rolldpos.Protocol, bc blockchain.Blockch
 func writeExcel(
 	fileName string,
 	NumSubEpochs int,
-	isDelegate map[int]bool,
-	produce map[int]int,
-	rewardAddr map[int]string,
-	votes map[int]string,
+	epochMap map[int]*epochInfo,
 	totalVotes map[int]*big.Int,
 	robotVotes map[int]*big.Int,
 	rewards map[string]*big.Int,
@@ -298,19 +351,21 @@ func writeExcel(
 	cell1 := row.AddCell()
 	cell1.Value = "Epoch Number"
 	cell2 := row.AddCell()
-	cell2.Value = "Is Delegate"
+	cell2.Value = "Is Block Producer"
 	cell3 := row.AddCell()
-	cell3.Value = "Production"
+	cell3.Value = "Is Active Block Producer"
 	cell4 := row.AddCell()
-	cell4.Value = "Expected Production"
+	cell4.Value = "Production"
 	cell5 := row.AddCell()
-	cell5.Value = "Votes"
+	cell5.Value = "Expected Production"
 	cell6 := row.AddCell()
-	cell6.Value = "Total Votes"
+	cell6.Value = "Votes"
 	cell7 := row.AddCell()
-	cell7.Value = "Robot Votes"
+	cell7.Value = "Total Votes"
 	cell8 := row.AddCell()
-	cell8.Value = "Reward Address"
+	cell8.Value = "Robot Votes"
+	cell9 := row.AddCell()
+	cell9.Value = "Reward Address"
 
 	keys := make([]int, 0)
 	for epochNum := range totalVotes {
@@ -318,29 +373,43 @@ func writeExcel(
 	}
 	sort.Ints(keys)
 	for _, epochNum := range keys {
+		epochInfo := epochMap[epochNum]
 		row = sheet.AddRow()
 		cell1 = row.AddCell()
 		cell1.Value = strconv.Itoa(epochNum)
 		cell2 = row.AddCell()
 		cell2.Value = "No"
-		if _, ok := isDelegate[epochNum]; ok {
+		if epochInfo != nil && epochInfo.isBlockProducer {
 			cell2.Value = "Yes"
 		}
 		cell3 = row.AddCell()
-		cell3.Value = strconv.Itoa(produce[epochNum])
+		cell3.Value = "No"
+		if epochInfo != nil && epochInfo.isActiveBlockProducer {
+			cell3.Value = "Yes"
+		}
 		cell4 = row.AddCell()
-		cell4.Value = strconv.Itoa(NumSubEpochs)
-		if _, ok := produce[epochNum]; !ok {
-			cell4.Value = "0"
+		cell4.Value = "0"
+		if epochInfo != nil {
+			cell4.Value = strconv.Itoa(epochInfo.produce)
 		}
 		cell5 = row.AddCell()
-		cell5.Value = votes[epochNum]
+		cell5.Value = "0"
+		if epochInfo != nil && epochInfo.isActiveBlockProducer {
+			cell5.Value = strconv.Itoa(NumSubEpochs)
+		}
 		cell6 = row.AddCell()
-		cell6.Value = totalVotes[epochNum].String()
-		cell7 := row.AddCell()
-		cell7.Value = robotVotes[epochNum].String()
-		cell8 = row.AddCell()
-		cell8.Value = rewardAddr[epochNum]
+		cell6.Value = "0"
+		if epochInfo != nil {
+			cell6.Value = epochInfo.votes
+		}
+		cell7 = row.AddCell()
+		cell7.Value = totalVotes[epochNum].String()
+		cell8 := row.AddCell()
+		cell8.Value = robotVotes[epochNum].String()
+		cell9 = row.AddCell()
+		if epochInfo != nil {
+			cell9.Value = epochInfo.rewardAddr
+		}
 	}
 
 	sheet2, err := file.AddSheet("sheet2")
@@ -371,7 +440,7 @@ func writeExcel(
 	return file.Save(fileName)
 }
 
-func uniqueAddress(rewardAddrs map[int]string) []string {
+func uniqueAddress(rewardAddrs []string) []string {
 	check := make(map[string]bool)
 	unique := make([]string, 0)
 	for _, rewardAddr := range rewardAddrs {

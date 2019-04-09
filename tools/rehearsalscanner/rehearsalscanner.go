@@ -57,7 +57,7 @@ func main() {
 		"io1n3llm0zzlles6pvpzugzajyzyjehztztxf2rff": "ratels",
 		"io1xsx5n94kg2zv64r7tm8vyz9mh86amfak9ka9xx": "rosemary3",
 		"io1wv5m0xyermvr2n0wjx2cjsqwyk863drdl5qfyn": "rosemary13",
-		"io1qqaswtu7rcevahucpfxc0zxx088pylwtxnkrrl": "stanford cpc",
+		"io1qqaswtu7rcevahucpfxc0zxx088pylwtxnkrrl": "stanfordcpc",
 		"io1e3w03ulnrsxth2g0rgsq6v406fhdccsgfq3hz7": "iotask",
 		"io1gfq9el2gnguus64ex3hu8ajd6e4yzk3f9cz5vx": "laomao",
 		"io15fqav3tugm96ge7anckx0k4gukz5m4mqf0jpv3": "rosemary0",
