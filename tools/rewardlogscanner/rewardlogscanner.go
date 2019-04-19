@@ -54,6 +54,13 @@ var (
 		"iotexgeeks":   true,
 		"iotxplorerio": true,
 		"preangle":     true,
+		"airfoil": true,
+		"blockboost": true,
+		"draperdragon": true,
+		"meter": true,
+		"raketat": true,
+		"lanhu": true,
+		"wetez": true,
 	}
 
 	rewardAddrMap = map[string]string{
@@ -86,6 +93,11 @@ var (
 		"io1et7zkzc76m9twa4gn5xht3urt9mwj05qvdtj66": "iotxplorerio",
 		"io13v4pnjhfhxdynpq0uhwv2lmu3a5uvwtclls63p": "preangle",
 		"io1fsrkpzrt6juvkuermz6dd2ng3a044uda6ywu8l": "iotxplorerio",
+		"io1nmv5r5yydkx5eg5ug6443q09keta5llpqpuw6t": "airfoil",
+		"io1cw8x7ruxeqqcklmlxc5yxqfu2txd2hgv8rt6j7": "draperdragon",
+		"io1nppj7tfh68cdwy58j379m8vytahwtnqhp9k7e4": "meter",
+		"io1jepce667yfux0z4xt9m6tp62fy3qs0h89qkhd8": "lanhu",
+		"io1zy03ks0hqtpqwpmgva56fdljt3tv2vajfejnxp": "wetez",
 	}
 )
 
