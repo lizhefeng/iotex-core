@@ -153,6 +153,8 @@ type Blockchain interface {
 
 	// RemoveSubscriber make you listen to every single produced block
 	RemoveSubscriber(BlockCreationSubscriber) error
+
+	KVStore() db.KVStore
 }
 
 // blockchain implements the Blockchain interface
@@ -787,6 +789,10 @@ func (bc *blockchain) RecoverChainAndState(targetHeight uint64) error {
 
 func (bc *blockchain) GenesisTimestamp() int64 {
 	return bc.config.Genesis.Timestamp
+}
+
+func (bc *blockchain) KVStore() db.KVStore {
+	return bc.dao.kvstore
 }
 
 //======================================
