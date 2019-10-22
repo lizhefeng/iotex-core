@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/golang/glog"
 	"go.uber.org/zap"
 
 	"github.com/iotexproject/iotex-core/blockchain/blockdao"
@@ -17,9 +16,6 @@ import (
 
 // migrateHeight is the blockchain height being migrated to
 var migrateHeight int
-
-// configPath is the config file path
-var configPath string
 
 func init() {
 	flag.IntVar(&migrateHeight, "migrate-height", 0, "blockchain migration height")
@@ -35,7 +31,7 @@ func init() {
 func main() {
 	cfg, err := config.New()
 	if err != nil {
-		glog.Fatalln("Failed to new config.", zap.Error(err))
+		log.L().Fatal("Failed to new config", zap.Error(err))
 	}
 	if err := os.Rename(cfg.Chain.ChainDBPath, cfg.Chain.ChainDBPath+".old"); err != nil {
 		log.L().Fatal("Failed to rename old chain db", zap.Error(err))
