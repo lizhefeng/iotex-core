@@ -16,12 +16,18 @@ import (
 
 // migrateHeight is the blockchain height being migrated to
 var migrateHeight int
+// oldPath is the blockchain db existing path
+var oldPath string
+// newPath is the blockchain new db path
+var newPath string
 
 func init() {
 	flag.IntVar(&migrateHeight, "migrate-height", 0, "blockchain migration height")
+	flag.StringVar(&oldPath, "old-path", "", "blockchain database old path")
+	flag.StringVar(&newPath, "new-path", "", "blockchain database new path")
 	flag.Usage = func() {
 		_, _ = fmt.Fprintf(os.Stderr,
-			"usage: migrate -current-path=[string]\n -new-path=[string]\n -recovery-height=[int]\n")
+			"usage: migrate -old-path=[string]\n -new-path=[string]\n -migrate-height=[int]\n")
 		flag.PrintDefaults()
 		os.Exit(2)
 	}
@@ -33,12 +39,22 @@ func main() {
 	if err != nil {
 		log.L().Fatal("Failed to new config", zap.Error(err))
 	}
-	if err := os.Rename(cfg.Chain.ChainDBPath, cfg.Chain.ChainDBPath+".old"); err != nil {
-		log.L().Fatal("Failed to rename old chain db", zap.Error(err))
+
+	if oldPath == "" {
+		oldPath = cfg.Chain.ChainDBPath
+
+	}
+	if newPath == "" {
+		newPath = cfg.Chain.ChainDBPath
+	}
+	if oldPath == newPath {
+		if err := os.Rename(oldPath, oldPath+".old"); err != nil {
+			log.L().Fatal("Failed to rename old chain db", zap.Error(err))
+		}
+		oldPath = oldPath + ".old"
 	}
 
-	currentPath := cfg.Chain.ChainDBPath + ".old"
-	cfg.DB.DbPath = currentPath
+	cfg.DB.DbPath = oldPath
 	_, gateway := cfg.Plugins[config.GatewayPlugin]
 	currentDAO := blockdao.NewBlockDAO(
 		db.NewBoltDB(cfg.DB),
@@ -48,7 +64,7 @@ func main() {
 		cfg.DB,
 	)
 
-	cfg.DB.DbPath = cfg.Chain.ChainDBPath
+	cfg.DB.DbPath = newPath
 	newDAO := blockdao.NewBlockDAO(db.NewBoltDB(cfg.DB),
 		gateway && !cfg.Chain.EnableAsyncIndexWrite,
 		cfg.Chain.CompressBlock,
