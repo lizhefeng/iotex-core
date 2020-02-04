@@ -8,8 +8,12 @@ package poll
 
 import (
 	"context"
+	"database/sql"
 	"encoding/hex"
+	"fmt"
 	"math/big"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -19,12 +23,19 @@ import (
 	"github.com/iotexproject/iotex-core/action/protocol"
 	"github.com/iotexproject/iotex-core/action/protocol/rolldpos"
 	"github.com/iotexproject/iotex-core/config"
+	asql "github.com/iotexproject/iotex-core/db/sql/analyticssql"
 	"github.com/iotexproject/iotex-core/pkg/log"
 	"github.com/iotexproject/iotex-core/state"
 	"github.com/iotexproject/iotex-election/committee"
 	"github.com/iotexproject/iotex-election/types"
 	"github.com/iotexproject/iotex-election/util"
 	"github.com/iotexproject/iotex-proto/golang/iotextypes"
+)
+
+const (
+	CandidateNativeVotesTableName = "candidate_native_votes"
+	EpochAddressKey               = "epoch_address"
+	insertNativeVotes             = "INSERT IGNORE INTO %s (epoch_number, operator_address, reward_address, native_votes) VALUES %s"
 )
 
 type stakingCommittee struct {
@@ -38,6 +49,7 @@ type stakingCommittee struct {
 	rp                   *rolldpos.Protocol
 	scoreThreshold       *big.Int
 	currentNativeBuckets []*types.Bucket
+	store                asql.Store
 }
 
 // NewStakingCommittee creates a staking committee which fetch result from governance chain and native staking
@@ -70,6 +82,18 @@ func NewStakingCommittee(
 			ns.SetContract(nativeStakingContractAddress)
 		}
 	}
+
+	connectionStr := os.Getenv("CONNECTION_STRING")
+	if connectionStr == "" {
+		connectionStr = "root:rootuser@tcp(127.0.0.1:3306)/"
+	}
+
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		dbName = "analytics"
+	}
+	store := asql.NewMySQL(connectionStr, dbName)
+
 	return &stakingCommittee{
 		hu:                hu,
 		electionCommittee: ec,
@@ -80,10 +104,17 @@ func NewStakingCommittee(
 		getEpochNum:       getEpochNum,
 		rp:                rp,
 		scoreThreshold:    scoreThreshold,
+		store:             store,
 	}, nil
 }
 
 func (sc *stakingCommittee) Initialize(ctx context.Context, sm protocol.StateManager) error {
+	if _, err := sc.store.GetDB().Exec(fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s "+
+		"(epoch_number DECIMAL(65, 0) NOT NULL, operator_address VARCHAR(41) NOT NULL, reward_address VARCHAR(41) NOT NULL "+
+		"native_votes DECIMAL(65, 0) NOT NULL, UNIQUE KEY %s (epoch_number, operator_address)", CandidateNativeVotesTableName, EpochAddressKey)); err != nil {
+		return err
+	}
+
 	return sc.governanceStaking.Initialize(ctx, sm)
 }
 
@@ -121,6 +152,23 @@ func (sc *stakingCommittee) DelegatesByHeight(height uint64) (state.CandidateLis
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get native chain candidates")
 	}
+	trueNativeVotes, ts, err := sc.nativeStaking.Votes(true)
+	if err == ErrNoData {
+		return sc.filterDelegates(cand), nil
+	}
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get native chain candidates")
+	}
+	epochNum := sc.rp.GetEpochNum(height)
+	epochHeight = sc.rp.GetEpochHeight(epochNum)
+	nextEpochHeight := sc.rp.GetEpochHeight(epochNum + 1)
+
+	if height == epochHeight+(nextEpochHeight-epochHeight)/2 && epochNum + 1 >= 6593  && epochNum + 1 <= 7022 {
+		if err := sc.updateNativeVotesToTable(epochNum+1, trueNativeVotes); err != nil {
+			return nil, errors.Wrapf(err, "failed to update native votes table for epoch %d", epochNum+1)
+		}
+	}
+
 	sc.currentNativeBuckets = nativeVotes.Buckets
 	return sc.mergeDelegates(cand, nativeVotes, ts), nil
 }
@@ -196,5 +244,25 @@ func (sc *stakingCommittee) persistNativeBuckets(ctx context.Context, receipt *a
 		return err
 	}
 	sc.currentNativeBuckets = nil
+	return nil
+}
+
+func (sc *stakingCommittee) updateNativeVotesToTable(epochNum uint64, trueNativeVotes *VoteTally) error {
+	valStrs := make([]string, 0, len(trueNativeVotes.Candidates))
+	valArgs := make([]interface{}, 0, len(trueNativeVotes.Candidates)*3)
+	for _, candidate := range trueNativeVotes.Candidates {
+		valStrs = append(valStrs, "(?, ?, ?)")
+		valArgs = append(valArgs, epochNum, candidate.Address, candidate.RewardAddress, candidate.Votes.String())
+	}
+	insertQuery := fmt.Sprintf(insertNativeVotes, CandidateNativeVotesTableName, strings.Join(valStrs, ","))
+
+	if err := sc.store.Transact(func(tx *sql.Tx) error {
+		if _, err := tx.Exec(insertQuery, valArgs...); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "failed to store state changes")
+	}
 	return nil
 }
